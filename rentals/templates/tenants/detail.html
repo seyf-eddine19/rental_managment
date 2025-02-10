@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container mt-4">
+    <!-- Header with text alignment and a modern title -->
+    <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
+      <h1 class="text-end">تفاصيل {{ model_verbose_name }}</h1>
+    </div>
+
+    <!-- Flash messages section with a cleaner design -->
+    {% if messages %}
+      <div class="alert-container">
+        {% for message in messages %}
+          <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% endif %} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Object Details Section -->
+    <div class="card shadow border-1 mb-4">
+        <div class="card-body">
+        <h5 class="card-title mb-4 text-primary">معلومات {{ model_verbose_name }}</h5>
+        <div class="row mb-3">
+          {% for field_name, field_value in fields %}
+            <div class="col-md-6 mb-2">
+              <p><strong>{{ field_name }}:</strong> <span class="text-muted">{{ field_value }}</span></p>
+            </div>
+          {% endfor %}
+        </div>
+        <div class="d-flex justify-content-end">
+          <a href="{% url model_name|lower|add:'_update' object.pk %}" class="btn btn-warning btn-sm mx-1">تعديل</a>
+          <a href="{% url model_name|lower|add:'_delete' object.pk %}" class="btn btn-danger btn-sm mx-1">حذف</a>
+          <a href="{% url model_name|lower|add:'_list' %}" class="btn btn-outline-secondary btn-sm mx-1">الرجوع إلى القائمة</a>
+        </div>
+      </div>
+    </div>
+    
+    
+    <!-- Active Apartment Detail Section -->
+    <div class="card shadow border-1 mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-4 text-primary">الشقق المستاجرة الحاليا</h5>
+        {% if object.active_apartment.all %}
+        <hr>
+        {% for active_apartment in object.active_apartment.all %}
+        <div class="row mb-3">
+          <p class="col-md-6 my-2"><strong>الشقة:</strong> <span class="text-muted">{{ active_apartment.apartment }}</span></p>
+          <p class="col-md-6 my-2"><a href="{% url 'apartment_detail' active_apartment.apartment.pk %}" class="btn btn-outline-primary btn-sm mx-1">تفاصيل الشقة</a></p>
+          <p class="col-md-6 my-2"><strong>رقم العقد:</strong> <span class="text-muted">{{ active_apartment.contract_number }}</span></p>
+          <p class="col-md-6 my-2"><strong>مبلغ الإيجار:</strong> <span class="text-muted">{{ active_apartment.rent_amount }}</span></p>
+          <p class="col-md-6 my-2"><strong>تاريخ بداية العقد:</strong> <span class="text-muted">{{ active_apartment.contract_start_date }}</span></p>
+          <p class="col-md-6 my-2"><strong>تاريخ انتهاء العقد:</strong> <span class="text-muted">{{ active_apartment.contract_end_date }}</span></p>
+        </div>
+        <hr>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted">لا يوجد شقق حاليًا.</p>
+        {% endif %}
+        <div class="d-flex justify-content-end">
+        </div>
+      </div>
+    </div>
+    <!-- Rental History Section -->
+    <div class="card shadow border-1 mb-4">
+      <div class="card-body">
+        <h5 class="card-title mb-4 text-primary">سجل الإيجار</h5>
+        <div class="row mb-3">
+          {% if object.apartment_rental_history.all %}
+          <ul class="list-group px-2">
+            {% for rental in object.apartment_rental_history.all %}
+            <li class="list-group-item border-bottom p-2">
+              <p class="m-0">
+                <strong>العقد: {{ rental.contract_number }} </strong> - 
+                قام باستاجار الشقة <strong>{{ rental.apartment }}</strong> 
+                من <strong>{{ rental.contract_start_date }}</strong> 
+                إلى <strong>{{ rental.contract_end_date }}</strong> بمبلغ: 
+                <strong>{{ rental.rent_amount }}</strong> 
+                {% if rental.notes %}  
+                <br> <small class="text-muted"><strong>ملاحظات:</strong> {{ rental.notes }}</small>
+                {% endif %}
+              </p>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            <p class="text-muted">لا يوجد سجل إيجار لهذه الشقة.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

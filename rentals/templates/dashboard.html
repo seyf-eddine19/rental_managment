@@ -1,0 +1,120 @@
+<head>
+    <!-- Include Font Awesome CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container my-3">
+        <div class="row text-center">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="py-1"><i style="font-size: 14;" class="mx-2 fas fa-building"></i> إجمالي المباني </h4>
+                    </div>
+                    <div class="card-body">
+                        <h2 class="text-primary">{{ building_count }}</h2>
+                        <p class="text-muted"><small>عدد المباني المسجلة في النظام</small></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="py-1"><i style="font-size: 14;" class="mx-2 fas fa-house-user"></i> إجمالي الشقق </h4>
+                    </div>
+                    <div class="card-body">
+                        <h2 class="text-success">{{ apartment_count }}</h2>
+                        <p class="text-muted"><small>عدد الشقق المتاحة والمستأجرة</small></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="card">
+                    <div class="card-header bg-warning text-white">
+                        <h4 class="py-1"><i style="font-size: 14;" class="mx-2 fas fa-user"></i> إجمالي المستأجرين </h4>
+                    </div>
+                    <div class="card-body">
+                        <h2 class="text-warning">{{ tenant_count }}</h2>
+                        <p class="text-muted"><small>عدد المستأجرين المسجلين في النظام</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mb-5">
+            <div class="container">
+            <div class="card shadow-sm border-1 p-0" m-auto>
+                <div class="card-header text-center bg-secondary text-white">
+                    <h4 class="py-1"><i style="font-size: 14;" class="mx-2 fas fa-house-user"></i> الشقق الشاغرة والماهولة حسب العمارة </h4>
+                </div>
+                <div class="col-md-8 offset-md-2 p-4 m-auto">
+                    <canvas id="buildingChart"></canvas>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    {% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const buildingData = {{ building_data_json|safe }};
+        const labels = buildingData.map(item => item.name);
+        const vacantData = buildingData.map(item => item.vacant);
+        const occupiedData = buildingData.map(item => item.occupied);
+        
+        const ctx = document.getElementById('buildingChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'الشقق الشاغرة',
+                        data: vacantData,
+                        backgroundColor: 'rgba(40, 167, 69, 0.6)',  /* الأخضر */
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'الشقق المشغولة',
+                        data: occupiedData,
+                        backgroundColor: 'rgba(220, 53, 69, 0.6)',  /* الأحمر */
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1,
+                            callback: function(value) {
+                                return value.toLocaleString();  // تنسيق الأرقام
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            boxWidth: 20,
+                            boxHeight: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+    {% endblock scripts %}
+</body>

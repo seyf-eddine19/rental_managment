@@ -1,0 +1,54 @@
+<div id="sidebar" class="sidebar bg-dark vh-100 position-fixed text-white shadow">
+    <ul class="nav flex-column text-white px-0">
+        <li class="nav-item {% if request.path == '/' %}active{% endif %}">
+            <a class="nav-link text-white" href="{% url 'index' %}">
+                <i class="fas fa-tachometer-alt mx-2"></i> لوحة التحكم
+            </a>
+        </li>
+
+        {% if 'rentals.view_activetenant' in request.user.get_all_permissions %}
+        <li class="nav-item {% if '/active_tenants/' in request.path %}active{% endif %}">
+            <a class="nav-link text-white" href="{% url 'active_tenant_list' %}">
+                <i class="fas fa-hand-holding-usd mx-2"></i>
+                <span class="link-text px-2">الإيجارات</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if 'rentals.view_building' in request.user.get_all_permissions %}
+        <li class="nav-item {% if '/buildings/' in request.path %}active{% endif %}">
+            <a class="nav-link text-white" href="{% url 'building_list' %}">
+                <i class="fas fa-building mx-2"></i>
+                <span class="link-text px-2">العمارات</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if 'rentals.view_apartment' in request.user.get_all_permissions %}
+        <li class="nav-item {% if '/apartments/' in request.path %}active{% endif %}">
+            <a class="nav-link text-white" href="{% url 'apartment_list' %}">
+                <i class="fas fa-house-user mx-2"></i>
+                <span class="link-text px-2">الشقق</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if 'rentals.view_tenant' in request.user.get_all_permissions %}
+        <li class="nav-item {% if '/tenants/' in request.path %}active{% endif %}">
+            <a class="nav-link text-white" href="{% url 'tenant_list' %}">
+                <i class="fas fa-users mx-2"></i> 
+                <span class="link-text px-2">المستأجرين</span>
+            </a>
+        </li>
+        {% endif %}
+
+        {% if 'auth.view_user' in request.user.get_all_permissions %}
+        <li class="nav-item {% if '/users/' in request.path %}active{% endif %}">
+            <a class="nav-link text-white" href="{% url 'user_list' %}">
+                <i class="fas fa-user-cog mx-2"></i>
+                <span class="link-text px-2">المستخدمين</span>
+            </a>
+        </li>
+        {% endif %}
+    </ul>
+</div>

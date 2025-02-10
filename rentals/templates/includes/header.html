@@ -1,0 +1,33 @@
+<header class="header shadow-sm fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div class="d-flex justify-content-between align-items-center">
+                <!-- Sidebar Toggle Button -->
+                <button class="btn btn-outline-primary me-3" id="sidebarToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+        
+                <!-- Brand Logo -->
+                <a class="navbar-brand fw-bold" href="{% url 'index' %}">
+                    <i class="fas fa-tachometer-alt"></i> لوحة التحكم
+                </a>
+            </div>
+            <!-- User Menu -->
+            <div class="dropdown">
+                <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
+                    <i class="fas fa-user-circle fa-2x"></i>
+                     {{ request.user }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-start">
+                    <li><a class="dropdown-item text-end" href="{% url 'profile' %}">
+                        <i class="fas fa-user"></i> الملف الشخصي</a>
+                    </li>
+                    <!-- <li><a href="/settings" class="dropdown-item">إعدادات الحساب</a></li> -->
+                    <li><a class="dropdown-item text-danger text-end" href="{% url 'logout' %}">
+                        <i class="fas fa-sign-out-alt"></i> تسجيل الخروج</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>

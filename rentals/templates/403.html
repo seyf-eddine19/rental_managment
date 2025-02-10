@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>403 Forbidden</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="alert alert-danger text-center mt-5">
+                    <h1>403 - ممنوع الوصول</h1>
+                    <p>لا تمتلك الصلاحيات اللازمة للوصول إلى هذه الصفحة.</p>
+                    <a href="{% url 'index' %}" class="btn btn-primary">العودة إلى الصفحة الرئيسية</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

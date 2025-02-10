@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    p span {
+        width: 100%;
+    }
+</style>
+{% endblock extra_css %}
+
+{% block content %}
+<div class="container my-3">
+    <!-- ✅ عرض رسائل التنبيه -->
+    {% if messages %}
+        <div class="alert-container">
+            {% for message in messages %}
+                <div class="alert {{ message.tags|default:'alert-info' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- ✅ كرت النموذج -->
+    <div class="card shadow-sm">
+        <div class="card-header text-white text-end {% if form.instance.pk %}bg-primary{% else %}bg-success{% endif %}">
+            <h1 class="text-white">{% if form.instance.pk %}تعديل المستخدم{% else %}إنشاء مستخدم جديد{% endif %}</h1>
+        </div>
+        <div class="card-body">
+            <form method="post" class="custom-form">
+                {% csrf_token %}
+                {{ form.as_p }}
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-success">حفظ</button>
+                    <a href="{% url 'user_list' %}" class="btn btn-secondary btn-sm mx-2">إلغاء</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Seyf Eddine Abdellaoui">
+    {% block metatags %}{% endblock metatags %}
+    <!-- Link to Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.css" rel="stylesheet">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet"> -->
+    <!-- Custom  Styles -->
+    <link rel="stylesheet" type="text/css" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock extra_css %}
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/logo.png' %}">
+    <title>{% block title %} لوحة التحكم {% endblock %}</title>
+    <style>
+
+    </style>
+</head>
+<body>
+    <!--===== HEADER =====-->
+    {% include "includes/header.html" %}
+    <!--===== SIDEBAR =====-->
+    {% include "includes/sidebar.html" %}
+    <!--===== MAIN =====-->
+    <main class="main px-1">
+        {% block content %}{% endblock content %}
+    </main>
+    <!--===== FOOTER =====-->
+    <!-- {% include "includes/footer.html" %} -->
+
+    <!-- Bootstrap JS and Popper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <!--===== SCRIPT JS =====-->
+    <script src="{% static 'js/script.js' %}"></script>
+    {% block scripts %}{% endblock scripts %}
+    <script>
+
+    </script>
+</body>
+</html>
+

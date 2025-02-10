@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    /* Add custom styles for the profile form */
+    .profile-form-container {
+        margin-top: 30px;
+    }
+    .profile-form-container .form-group {
+        margin-bottom: 15px;
+    }
+    .password-change-form {
+        margin-top: 30px;
+        border-top: 1px solid #ddd;
+        padding-top: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="my-3">تعديل الملف الشخصي</h1>
+
+    {% if messages %}
+      <div class="alert-container">
+        {% for message in messages %}
+          <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    
+    <div class="card shadow-sm my-3">
+        <div class="card-header bg-primary text-white text-end">
+          <h3 class="text-white">معلومات الحساب</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" class="custom-form">
+              {% csrf_token %}
+              {{ form.as_p }}
+              <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">تحديث الملف الشخصي</button>
+              </div>
+            </form>
+        </div>
+    </div>
+    <div class="card shadow-sm mb-3">
+        <div class="card-header bg-success text-white text-end">
+            <h3 class="text-white">تغيير كلمة المرور</h3>
+        </div>
+        <div class="card-body">
+            <form method="post" class="custom-form">
+              {% csrf_token %}
+              {{ password_form.as_p }} 
+              <div class="d-flex justify-content-end">
+                  <button type="submit" class="btn btn-warning">تغيير كلمة المرور</button>
+              </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

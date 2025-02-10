@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+{% endblock extra_css %}
+
+{% block title %} لوحة التحكم | المستخدمين {% endblock %}
+{% block content %}
+  <div class="container my-3">
+    <!-- Page Title -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="bg-primary text-white p-4 rounded-3">
+                <h1 class="display-4 fw-bold">المستخدمين</h1>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Add & Exports Buttons -->
+    <div class="d-flex justify-content-end align-items-center border-bottom pb-3 mb-4 gap-2">
+
+      <a href="{% url 'user_create' %}" class="btn btn-primary shadow-sm">
+          <i class="fas fa-plus-circle"></i> إضافة مستخدم
+      </a>
+    </div>
+
+    <!-- Success & Error Messages -->
+    {% if messages %}
+      <div class="alert-container">
+        {% for message in messages %}
+          <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'error' %}alert-danger{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+        
+    <!-- Filter Section -->
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm" style="overflow-x: auto; max-width: 100%;">
+                <div class="card-body">
+                    <table id="usersTable" class="table table-responsive table-striped table-hover">
+                      <thead class="table-dark">
+                        <tr>
+                          <th>اسم المستخدم</th>
+                          <th>الاسم الأول</th>
+                          <th>الاسم الأخير</th>
+                          <th>البريد الالكتروني</th>
+                          <th>نشط</th>
+                          <th>صلاحيات المدير</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {% for user in users %}
+                          <tr>
+                            <td>{{ user.username }}</td>
+                            <td>{{ user.first_name }}</td>
+                            <td>{{ user.last_name }}</td>
+                            <td>{{ user.email }}</td><td>
+                                {% if user.is_active %}
+                                  <i class="fas fa-check-circle" style="color: green;"></i> <!-- Active -->
+                                {% else %}
+                                  <i class="fas fa-times-circle" style="color: red;"></i> <!-- Inactive -->
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user.is_superuser %}
+                                  <i class="fas fa-check-circle" style="color: green;"></i> <!-- Superuser -->
+                                {% else %}
+                                  <i class="fas fa-times-circle" style="color: red;"></i> <!-- Not Superuser -->
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'user_update' user.pk %}" class="btn btn-outline-warning btn-sm">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'user_delete' user.pk %}" class="btn btn-outline-danger btn-sm">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </td>
+                          </tr>
+                        
+                        {% empty %}
+                          <tr>
+                              <td colspan="6" class="text-center py-4">
+                                  <em>لا يوجد مستخدمين حتى الآن</em>
+                              </td>
+                          </tr>
+                        {% endfor %}
+                      </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}
