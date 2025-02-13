@@ -32,17 +32,18 @@ class Apartment(models.Model):
     class Meta:
         verbose_name = "الشقة"
         verbose_name_plural = "الشقق"
+        unique_together = ("building", "apartment_number")
     
-    def save(self, *args, **kwargs):
-        if not self.pk: 
-            self.building.number_of_apartments += 1
-            self.building.save()
-        super().save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     if not self.pk: 
+    #         self.building.number_of_apartments += 1
+    #         self.building.save()
+    #     super().save(*args, **kwargs)
 
-    def delete(self, *args, **kwargs):
-        self.building.number_of_apartments += 1
-        self.building.save()
-        super().delete(*args, **kwargs)
+    # def delete(self, *args, **kwargs):
+    #     self.building.number_of_apartments += 1
+    #     self.building.save()
+    #     super().delete(*args, **kwargs)
         
     def __str__(self):
         return f"{self.building.building_number}|{self.apartment_number}"

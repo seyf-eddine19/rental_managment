@@ -19,6 +19,7 @@ from reportlab.lib.styles import ParagraphStyle
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils import timezone
+from django.utils.text import slugify
 from django.shortcuts import render, redirect, get_object_or_404
 
 from django.contrib import messages
@@ -29,15 +30,16 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 
 from django.http import HttpResponse
-from django.utils.text import slugify
 from django.urls import reverse_lazy
-from django.db.models import Count, Q
+from django.forms import HiddenInput
 from django.views.generic import ListView, FormView, DetailView, DeleteView
+from django.db.models import Count, Q
 
 from .models import Building, Apartment, Tenant, ActiveTenant
 from .forms import (
     BuildingForm, ApartmentForm, TenantForm, ActiveTenantForm, UserForm, ProfileForm,
-    BuildingFilterForm , ApartmentFilterForm, TenantFilterForm, ActiveTenantFilterForm
+    BuildingFilterForm , ApartmentFilterForm, TenantFilterForm, ActiveTenantFilterForm,
+    ApartmentImportForm
 )
 
 def custom_403(request, exception):
@@ -313,6 +315,55 @@ class ExportMixin:
         return self.prepare_export_response(pdf_content, "pdf", model_name)
 
 
+# Form Views Mixin
+class FormViewMixin(FormView):
+    def get_object(self):
+        """Retrieve object if updating, or return None for creation."""
+        pk = self.kwargs.get("pk")
+        if pk:
+            return get_object_or_404(self.model, pk=pk)
+        return None
+
+    def get_form_kwargs(self):
+        """Pass instance to form if updating"""
+        kwargs = super().get_form_kwargs()
+        obj = self.get_object()
+        if obj:
+            kwargs["instance"] = obj
+        return kwargs
+
+    def get_initial(self):
+        """Prefill form with existing data if updating."""
+        obj = self.get_object()
+        if obj:
+            return {field.name: getattr(obj, field.name) for field in obj._meta.fields}
+        return {}
+
+    def form_valid(self, form):
+        """Validate form and handle saving"""
+        obj = form.save(commit=False) 
+        is_update = self.get_object() is not None 
+
+        obj.save()
+
+        if is_update:
+            messages.success(self.request, "تم تحديث البيانات بنجاح!")
+        else:
+            messages.success(self.request, "تم إضافة البيانات بنجاح!")
+
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        """Handle invalid form submissions."""
+        messages.error(self.request, "حدث خطأ أثناء حفظ البيانات. يرجى التحقق من المدخلات.")
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["object"] = self.get_object()
+        return context
+
+
 # User Views
 class UserListView(PermissionRequiredMixin, ListView):
     model = User
@@ -336,7 +387,8 @@ class UserDeleteView(PermissionRequiredMixin, DeleteView):
         messages.success(request, 'تم حذف البيانات بنجاح.')
         return response
 
-class UserFormView(PermissionRequiredMixin, FormView):
+class UserFormView(PermissionRequiredMixin, FormViewMixin):
+    model = User
     form_class = UserForm
     template_name = 'users/user_form.html'
     success_url = reverse_lazy('user_list')
@@ -359,34 +411,6 @@ class UserFormView(PermissionRequiredMixin, FormView):
             form.fields['password'].widget = HiddenInput()
             form.fields['password'].required = False
         return form
-    
-    def get_object(self):
-        """إرجاع كائن المستخدم إذا كنا في وضع التحديث."""
-        user_id = self.kwargs.get("pk")
-        if user_id:
-            return get_object_or_404(User, pk=user_id)
-        return None
-
-    def get_form_kwargs(self):
-        """Pass instance to form if updating"""
-        kwargs = super().get_form_kwargs()
-        if self.user_instance:
-            kwargs["instance"] = self.user_instance
-        return kwargs
-    
-    def form_valid(self, form):
-        """Handles form validation and saves the user"""
-        user = form.save()
-        if self.user_instance:
-            messages.success(self.request, "تم تعديل بيانات المستخدم بنجاح.")
-        else:
-            messages.success(self.request, "تم إنشاء المستخدم بنجاح.")
-        return super().form_valid(form)
-
-    def form_invalid(self, form):
-        """Handles form errors"""
-        messages.error(self.request, "حدث خطأ أثناء حفظ البيانات. يرجى التحقق من المدخلات.")
-        return super().form_invalid(form)
 
 
 # Building Views
@@ -414,54 +438,12 @@ class BuildingListView(PermissionRequiredMixin, ExportMixin, ListView):
         context['filter_form'] = BuildingFilterForm(self.request.GET)
         return context
 
-class BuildingFormView(PermissionRequiredMixin, FormView):
+class BuildingFormView(PermissionRequiredMixin, FormViewMixin):
     model = Building
     form_class = BuildingForm
     template_name = 'buildings/form.html'
     success_url = reverse_lazy('building_list')
-    permission_required = 'rentals.add_building'
-
-    def get_object(self):
-        """ Retrieve object if updating, or return None for creation. """
-        pk = self.kwargs.get("pk")
-        if pk:
-            return get_object_or_404(self.model, pk=pk)
-        return None
-
-    def get_initial(self):
-        """ Prefill form with existing data if updating. """
-        obj = self.get_object()
-        if obj:
-            return {field.name: getattr(obj, field.name) for field in obj._meta.fields}
-        return {}
-
-    def form_valid(self, form):
-        """Validate main form and related formsets."""
-        obj = self.get_object()
-        if form.is_valid():
-            if obj:
-                # Update existing object
-                for field in form.cleaned_data:
-                    setattr(obj, field, form.cleaned_data[field])
-                obj.save()
-                messages.success(self.request, "تم تحديث العهد بنجاح!")
-            else:
-                # Create new object
-                obj = form.save()
-                messages.success(self.request, "تم إضافة العهد بنجاح!")
-            return super().form_valid(form) 
-        else:
-            return self.form_invalid(form) 
-
-    def form_invalid(self, form):
-        """Handle invalid form submissions."""
-        messages.error(self.request, "حدث خطأ أثناء حفظ البيانات. يرجى التحقق من المدخلات.")
-        return super().form_invalid(form)
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["object"] = self.get_object()
-        return context
+    permission_required = 'rentals.add_building'  
 
 class BuildingDetailView(PermissionRequiredMixin, DetailView):
     model = Building
@@ -523,57 +505,67 @@ class ApartmentListView(PermissionRequiredMixin, ExportMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['filter_form'] = ApartmentFilterForm(self.request.GET)
+        context['import_form'] = ApartmentImportForm()
         return context
 
-class ApartmentFormView(PermissionRequiredMixin, FormView):
+    def post(self, request, *args, **kwargs):
+        """استيراد الشقق من ملف Excel"""
+        form = ApartmentImportForm(request.POST, request.FILES)
+        if form.is_valid():
+            excel_file = request.FILES["import_file"]
+
+            if not excel_file.name.endswith(".xlsx"):
+                messages.error(request, "يرجى تحميل ملف Excel بصيغة (.xlsx) فقط.")
+                return redirect("apartment_list")
+
+            try:
+                wb = openpyxl.load_workbook(excel_file)
+                sheet = wb.active  # الحصول على الورقة النشطة
+
+                for row in sheet.iter_rows(min_row=2, values_only=True):
+                    try:
+                        building_number, apartment_number, num_of_rooms, electricity_meter, water_meter, status, floor_number = row
+
+                        if not all([building_number, apartment_number, num_of_rooms, electricity_meter, water_meter, status, floor_number]):
+                            messages.error(request, f"بيانات ناقصة في أحد الصفوف، يرجى التحقق من الملف.")
+                            continue
+
+                        building, created = Building.objects.get_or_create(
+                            building_number=building_number,
+                            defaults={"number_of_floors": 1, "number_of_apartments": 0}
+                        )
+
+                        Apartment.objects.create(
+                            building=building,
+                            apartment_number=apartment_number,
+                            num_of_rooms=int(num_of_rooms),
+                            electricity_meter_number=electricity_meter,
+                            water_meter_number=water_meter,
+                            status=status,
+                            floor_number=int(floor_number),
+                        )
+
+                        building.number_of_apartments = building.apartments.count()
+                        building.save()
+
+                    except Exception as e:
+                        messages.error(request, f"حدث خطأ أثناء استيراد البيانات: {building}|{apartment_number} \n {e}")
+
+                messages.success(request, "تم استيراد الشقق بنجاح.")
+                return redirect("apartment_list")
+
+            except Exception as e:
+                messages.error(request, f"تعذر قراءة ملف Excel: {e}")
+                return redirect("apartment_list")
+
+        return redirect("apartment_list")
+
+class ApartmentFormView(PermissionRequiredMixin, FormViewMixin):
     model = Apartment
     form_class = ApartmentForm
     template_name = "apartments/form.html"
     success_url = reverse_lazy('apartment_list')
     permission_required = 'rentals.add_apartment'
-
-    def get_object(self):
-        """ Retrieve object if updating, or return None for creation. """
-        pk = self.kwargs.get("pk")
-        if pk:
-            return get_object_or_404(self.model, pk=pk)
-        return None
-
-    def get_initial(self):
-        """ Prefill form with existing data if updating. """
-        obj = self.get_object()
-        if obj:
-            return {field.name: getattr(obj, field.name) for field in obj._meta.fields}
-        return {}
-
-    def form_valid(self, form):
-        """Validate main form and related formsets."""
-        obj = self.get_object()
-        if form.is_valid():
-            if obj:
-                # Update existing object
-                for field in form.cleaned_data:
-                    setattr(obj, field, form.cleaned_data[field])
-                obj.save()
-                messages.success(self.request, "تم تحديث العهد بنجاح!")
-            else:
-                # Create new object
-                obj = form.save()
-                messages.success(self.request, "تم إضافة العهد بنجاح!")
-            return super().form_valid(form) 
-        else:
-            return self.form_invalid(form) 
-
-    def form_invalid(self, form):
-        """Handle invalid form submissions."""
-        messages.error(self.request, "حدث خطأ أثناء حفظ البيانات. يرجى التحقق من المدخلات.")
-        return super().form_invalid(form)
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["object"] = self.get_object()
-        print(self.get_object())
-        return context
 
 class ApartmentDetailView(PermissionRequiredMixin, DetailView):
     model = Apartment
@@ -643,54 +635,12 @@ class TenantListView(PermissionRequiredMixin, ExportMixin, ListView):
         context['filter_form'] = TenantFilterForm(self.request.GET)
         return context
 
-class TenantFormView(PermissionRequiredMixin, FormView):
+class TenantFormView(PermissionRequiredMixin, FormViewMixin):
     model = Tenant
     form_class = TenantForm
     template_name = 'tenants/form.html'
     success_url = reverse_lazy('tenant_list')
     permission_required = 'rentals.add_tenant'
-
-    def get_object(self):
-        """ Retrieve object if updating, or return None for creation. """
-        pk = self.kwargs.get("pk")
-        if pk:
-            return get_object_or_404(self.model, pk=pk)
-        return None
-
-    def get_initial(self):
-        """ Prefill form with existing data if updating. """
-        obj = self.get_object()
-        if obj:
-            return {field.name: getattr(obj, field.name) for field in obj._meta.fields}
-        return {}
-
-    def form_valid(self, form):
-        """Validate main form and related formsets."""
-        obj = self.get_object()
-        if form.is_valid():
-            if obj:
-                # Update existing object
-                for field in form.cleaned_data:
-                    setattr(obj, field, form.cleaned_data[field])
-                obj.save()
-                messages.success(self.request, "تم تحديث العهد بنجاح!")
-            else:
-                # Create new object
-                obj = form.save()
-                messages.success(self.request, "تم إضافة العهد بنجاح!")
-            return super().form_valid(form) 
-        else:
-            return self.form_invalid(form) 
-
-    def form_invalid(self, form):
-        """Handle invalid form submissions."""
-        messages.error(self.request, "حدث خطأ أثناء حفظ البيانات. يرجى التحقق من المدخلات.")
-        return super().form_invalid(form)
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context["object"] = self.get_object()
-        return context
 
 class TenantDetailView(PermissionRequiredMixin, DetailView):
     model = Tenant

@@ -1,0 +1,6 @@
+Django==5.0.7
+django-select2==8.2.3
+openpyxl
+reportlab
+arabic-reshaper
+python-bidi

@@ -89,9 +89,9 @@ class BuildingForm(forms.ModelForm):
         model = Building
         fields = "__all__"
         can_delete=True
-        widgets = {
-            'number_of_apartments': forms.NumberInput(attrs={'readonly': 'readonly'}),  
-        }
+        # widgets = {
+        #     'number_of_apartments': forms.NumberInput(attrs={'readonly': 'readonly'}),  
+        # }
 
 class ApartmentForm(forms.ModelForm):
     class Meta:
@@ -99,7 +99,6 @@ class ApartmentForm(forms.ModelForm):
         fields = "__all__"
         can_delete=True
         widgets = {
-            'number_of_apartments': forms.NumberInput(attrs={'readonly': 'readonly'}),  
             'date': forms.DateInput(attrs={'type': 'date'}),
         }
 
@@ -203,3 +202,17 @@ class ActiveTenantFilterForm(forms.Form):
         self.fields['apartment'].choices = [(b, b) for b in apartments]
         tenants = Tenant.objects.all().distinct()
         self.fields['tenant'].choices = [(b, b) for b in tenants]
+
+
+class ApartmentImportForm(forms.Form):
+    import_file = forms.FileField(
+        label="رفع ملف Excel",
+        widget=forms.ClearableFileInput(attrs={"accept": ".xlsx"}),
+    )
+
+    def clean_file(self):
+        file = self.cleaned_data.get("import_file")
+        if file:
+            if not file.name.endswith(".xlsx"):
+                raise forms.ValidationError("يجب أن يكون الملف بصيغة Excel (.xlsx) فقط.")
+        return file

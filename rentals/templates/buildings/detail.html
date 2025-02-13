@@ -39,7 +39,12 @@
     </div>
     <div class="card shadow border-1 mb-4">
       <div class="card-body">
-        <h5 class="card-title mb-4 text-primary">قائمة الشقق</h5>
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 gap-2">
+          <h5 class="card-title mb-4 text-primary">قائمة الشقق</h5>
+          <a href="{% url 'apartment_create' %}" class="btn btn-primary shadow-sm">
+            <i class="fas fa-plus-circle"></i> إضافة شقة
+          </a>
+        </div>
         
         <div style="overflow-x: auto; max-width: 100%;">
           <table id="apartmentsTable" class="table table-responsive table-striped table-hover">

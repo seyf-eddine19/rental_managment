@@ -19,7 +19,7 @@ urlpatterns = [
     path('apartments/', views.ApartmentListView.as_view(), name='apartment_list'),
     path('apartments/create/', views.ApartmentFormView.as_view(), name='apartment_create'),
     path('apartments/<int:pk>/', views.ApartmentDetailView.as_view(), name='apartment_detail'),
-    path('apartment/<int:pk>/set_vacant/', views.ApartmentDetailView.as_view(), name='apartment_set_vacant'),
+    path('apartments/<int:pk>/set_vacant/', views.ApartmentDetailView.as_view(), name='apartment_set_vacant'),
     path('apartments/<int:pk>/update/', views.ApartmentFormView.as_view(), name='apartment_update'),
     path('apartments/<int:pk>/delete/', views.ApartmentDeleteView.as_view(), name='apartment_delete'),
 
@@ -31,9 +31,9 @@ urlpatterns = [
     path('tenants/<int:pk>/delete/', views.TenantDeleteView.as_view(), name='tenant_delete'),
 
     # Active Tenant URLs
-    path('active_tenant/', views.ActiveTenantListView.as_view(), name='active_tenant_list'),
-    path('apartment/<int:apartment_id>/manage-tenant/create/', views.ActiveTenantFormView.as_view(), name='active_tenant_create'),
-    path('apartment/<int:apartment_id>/manage-tenant/<int:pk>/update/', views.ActiveTenantFormView.as_view(), name='active_tenant_update'),
+    path('active_tenants/', views.ActiveTenantListView.as_view(), name='active_tenant_list'),
+    path('active_tenants/<int:apartment_id>/manage-tenant/create/', views.ActiveTenantFormView.as_view(), name='active_tenant_create'),
+    path('active_tenants/<int:apartment_id>/manage-tenant/<int:pk>/update/', views.ActiveTenantFormView.as_view(), name='active_tenant_update'),
     
     # User URLs
     path('users/', views.UserListView.as_view(), name='user_list'),
