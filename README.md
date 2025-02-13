@@ -20,4 +20,4 @@ The Rental Management System is a Django-based web application that helps landlo
 ## 📬 Contact
 For inquiries or support, feel free to reach out:
 - GitHub: [@seyf-eddine19](https://github.com/seyf-eddine19)
-- Email: **seyfeddine.abdellaoui@gmail.com**
+- Email: **seyfeddine.freelance@gmail.com**
