@@ -345,7 +345,8 @@ class FormViewMixin(FormView):
         is_update = self.get_object() is not None 
 
         obj.save()
-
+        self.object = obj 
+ 
         if is_update:
             messages.success(self.request, "تم تحديث البيانات بنجاح!")
         else:
@@ -524,9 +525,9 @@ class ApartmentListView(PermissionRequiredMixin, ExportMixin, ListView):
 
                 for row in sheet.iter_rows(min_row=2, values_only=True):
                     try:
-                        building_number, apartment_number, num_of_rooms, electricity_meter, water_meter, status, floor_number = row
+                        building_number, apartment_number, num_of_rooms, electricity_meter, water_meter, floor_number = row
 
-                        if not all([building_number, apartment_number, num_of_rooms, electricity_meter, water_meter, status, floor_number]):
+                        if not all([building_number, apartment_number, num_of_rooms, electricity_meter, water_meter, floor_number]):
                             messages.error(request, f"بيانات ناقصة في أحد الصفوف، يرجى التحقق من الملف.")
                             continue
 
@@ -541,7 +542,7 @@ class ApartmentListView(PermissionRequiredMixin, ExportMixin, ListView):
                             num_of_rooms=int(num_of_rooms),
                             electricity_meter_number=electricity_meter,
                             water_meter_number=water_meter,
-                            status=status,
+                            status='شاغرة',
                             floor_number=int(floor_number),
                         )
 
@@ -566,6 +567,9 @@ class ApartmentFormView(PermissionRequiredMixin, FormViewMixin):
     template_name = "apartments/form.html"
     success_url = reverse_lazy('apartment_list')
     permission_required = 'rentals.add_apartment'
+    
+    def get_success_url(self):
+        return reverse_lazy('apartment_detail', kwargs={'pk': self.object.pk})
 
 class ApartmentDetailView(PermissionRequiredMixin, DetailView):
     model = Apartment

@@ -55,13 +55,13 @@
         {% endif %}
         <div class="d-flex justify-content-end">
           {% if object.active_tenant %} 
-           <form method="post">
+          <form method="post" onsubmit="return confirm('هل أنت متأكد من أنك تريد إخلاء الشقة {{apartment}}؟');">
             {% csrf_token %}
-            <button type="submit" name="set_vacant" class="btn btn-danger mx-1">تعيين الشقة كشاغرة</button>
+            <button type="submit" name="set_vacant" class="btn btn-danger mx-1">إخلاء الشقة</button>
           </form>
-          <a href="{% url 'active_tenant_update' object.pk object.active_tenant.pk %}" class="btn btn-info text-white mx-1">تعديل بيانات العقد</a>
+          <a href="{% url 'active_tenant_update' object.pk object.active_tenant.pk %}" class="btn btn-info text-white mx-1">تحديث العقد</a>
           {% else %}
-          <a href="{% url 'active_tenant_create' object.pk %}" class="btn btn-primary mx-1">مستاجر جديد</a>
+          <a href="{% url 'active_tenant_create' object.pk %}" class="btn btn-primary mx-1">تأجير الشقة</a>
           {% endif %}
         </div>
       </div>

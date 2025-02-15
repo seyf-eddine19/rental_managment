@@ -96,7 +96,10 @@ class BuildingForm(forms.ModelForm):
 class ApartmentForm(forms.ModelForm):
     class Meta:
         model = Apartment
-        fields = "__all__"
+        fields = [
+            'building', 'apartment_number', 'num_of_rooms', 'electricity_meter_number', 
+            'water_meter_number', 'floor_number'
+        ]
         can_delete=True
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
