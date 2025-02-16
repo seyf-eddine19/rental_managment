@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User, Group, Permission
 from django_select2.forms import Select2Widget
-from .models import Building, Apartment, Tenant, ActiveTenant
+from .models import Building, Apartment, Tenant, ActiveTenant, ServiceRoom
 
 
 class UserForm(forms.ModelForm):
@@ -92,6 +92,12 @@ class BuildingForm(forms.ModelForm):
         # widgets = {
         #     'number_of_apartments': forms.NumberInput(attrs={'readonly': 'readonly'}),  
         # }
+
+class ServiceRoomForm(forms.ModelForm):
+    class Meta:
+        model = ServiceRoom
+        fields = ["room_number", "electricity_meter_number", "water_meter_number"]
+        can_delete=True
 
 class ApartmentForm(forms.ModelForm):
     class Meta:

@@ -15,6 +15,21 @@ class Building(models.Model):
         return self.building_number
 
 
+class ServiceRoom(models.Model):
+    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name='service_rooms', verbose_name="العمارة")
+    room_number = models.CharField(max_length=50, verbose_name="رقم الغرفة")
+    electricity_meter_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="رقم عداد الكهرباء")
+    water_meter_number = models.CharField(max_length=50, blank=True, null=True, verbose_name="رقم عداد الماء")
+
+    class Meta:
+        verbose_name = "غرفة الخدمات"
+        verbose_name_plural = "غرف الخدمات"
+        unique_together = ("building", "room_number")
+
+    def __str__(self):
+        return f"{self.building} | {self.room_number}"
+    
+
 class Apartment(models.Model):
     APARTMENT_STATUS_CHOICES = [
         ('شاغرة', 'شاغرة'),
@@ -46,7 +61,7 @@ class Apartment(models.Model):
     #     super().delete(*args, **kwargs)
         
     def __str__(self):
-        return f"{self.building.building_number}|{self.apartment_number}"
+        return f"{self.building.building_number} | {self.apartment_number}"
 
 
 class Tenant(models.Model):

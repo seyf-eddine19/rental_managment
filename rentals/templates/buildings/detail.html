@@ -37,10 +37,76 @@
         </div>
       </div>
     </div>
+   
     <div class="card shadow border-1 mb-4">
       <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 gap-2">
-          <h5 class="card-title mb-4 text-primary">قائمة الشقق</h5>
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3 mt-2 gap-2">
+          <h5 class="card-title text-primary">غرف الخدمات</h5>
+        </div>
+    
+        <div style="overflow-x: auto; max-width: 100%;">
+          <table id="apartmentsTable" class="table table-responsive table-striped table-hover">
+            <thead class="table-dark">
+              <tr>
+                <th>رقم الغرفة</th>
+                <th>عداد الكهرباء</th>
+                <th>عداد الماء</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Form for Adding or Editing Service Rooms -->
+              <tr>
+                <form method="post" class="custom-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="room_id" value="{{ editing_room.id|default:'' }}">  <!-- Hidden field for update -->
+                  <td>{{ serviceroom_form.room_number }}</td>
+                  <td>{{ serviceroom_form.electricity_meter_number }}</td>
+                  <td>{{ serviceroom_form.water_meter_number }}</td>
+                  <td>
+                    <button type="submit" class="btn {% if editing_room %}btn-success{% else %}btn-primary{% endif %} btn-sm mt-0">
+                      {% if editing_room %} <i class="fas fa-edit"></i> تحديث{% else %} <i class="fas fa-plus-circle"></i> إضافة{% endif %}
+                    </button>
+                  </td>
+                </form>
+              </tr>
+    
+              <!-- Display Existing Service Rooms -->
+              {% for room in service_rooms %}
+              <tr>
+                <td>{{ room.room_number }}</td>
+                <td>{{ room.electricity_meter_number }}</td>
+                <td>{{ room.water_meter_number }}</td>
+                <td>
+                  <!-- Edit Button -->
+                  <a href="?edit_room={{ room.id }}" class="btn btn-warning btn-sm text-white">
+                    <i class="fas fa-edit"></i>
+                  </a>
+    
+                  <!-- Delete Button -->
+                  <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="delete_room" value="{{ room.id }}">
+                    <button type="submit" class="btn btn-danger btn-sm mx-1"
+                      onclick="return confirm('هل أنت متأكد من حذف غرفة الخدمات {{ room.room_number }} ؟')">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5">لا توجد غرف خدمات.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow border-1 mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
+          <h5 class="card-title text-primary">قائمة الشقق</h5>
           <a href="{% url 'apartment_create' %}" class="btn btn-primary shadow-sm">
             <i class="fas fa-plus-circle"></i> إضافة شقة
           </a>

@@ -35,9 +35,9 @@ from django.forms import HiddenInput
 from django.views.generic import ListView, FormView, DetailView, DeleteView
 from django.db.models import Count, Q
 
-from .models import Building, Apartment, Tenant, ActiveTenant
+from .models import Building, Apartment, Tenant, ActiveTenant, ServiceRoom
 from .forms import (
-    BuildingForm, ApartmentForm, TenantForm, ActiveTenantForm, UserForm, ProfileForm,
+    BuildingForm, ServiceRoomForm, ApartmentForm, TenantForm, ActiveTenantForm, UserForm, ProfileForm,
     BuildingFilterForm , ApartmentFilterForm, TenantFilterForm, ActiveTenantFilterForm,
     ApartmentImportForm
 )
@@ -453,8 +453,8 @@ class BuildingDetailView(PermissionRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["model_name"] = self.model._meta.model_name  # Model name for template
-        context["model_verbose_name"] = self.model._meta.verbose_name  # Model name for template
+        context["model_name"] = self.model._meta.model_name  
+        context["model_verbose_name"] = self.model._meta.verbose_name  
 
         # Fetch only direct fields (exclude reverse relations)
         context["fields"] = [
@@ -462,8 +462,55 @@ class BuildingDetailView(PermissionRequiredMixin, DetailView):
             for field in self.model._meta.get_fields()
             if not (field.auto_created and not field.concrete) and field.name != "id"
         ]
+
+        context["service_rooms"] = self.object.service_rooms.all()
+        
+        # Check if editing a room
+        room_id = self.request.GET.get("edit_room")
+        if room_id:
+            room = get_object_or_404(ServiceRoom, id=room_id, building=self.object)
+            context['serviceroom_form'] = ServiceRoomForm(instance=room)
+            context['editing_room'] = room  # Pass the room object for editing UI
+        else:
+            context['serviceroom_form'] = ServiceRoomForm()
+
         return context
-    
+
+    def post(self, request, *args, **kwargs):
+        """Handle adding, updating, and deleting service rooms."""
+        self.object = self.get_object()
+
+        # Handle deletion
+        if "delete_room" in request.POST:
+            room_id = request.POST.get("delete_room")
+            service_room = get_object_or_404(ServiceRoom, id=room_id, building=self.object)
+            service_room.delete()
+            messages.success(request, f"تم حذف غرفة الخدمات {service_room.room_number} بنجاح.")
+            return redirect(self.get_success_url())
+
+        # Handle add/update
+        room_id = request.POST.get("room_id")  # Check if it's an update request
+        if room_id:
+            service_room = get_object_or_404(ServiceRoom, id=room_id, building=self.object)
+            form = ServiceRoomForm(request.POST, instance=service_room)  # Update existing
+            action = "تحديث"
+        else:
+            form = ServiceRoomForm(request.POST)  # Create new
+            service_room = form.save(commit=False)
+            service_room.building = self.object
+            action = "إضافة"
+
+        if form.is_valid():
+            service_room.save()
+            messages.success(request, f"تم {action} غرفة الخدمات بنجاح.")
+        else:
+            messages.error(request, f"حدث خطأ أثناء {action} غرفة الخدمات.")
+
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse_lazy('building_detail', kwargs={'pk': self.object.pk})
+
 class BuildingDeleteView(PermissionRequiredMixin, DeleteView):
     model = Building
     template_name = 'buildings/delete.html'
