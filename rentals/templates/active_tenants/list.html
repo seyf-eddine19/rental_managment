@@ -43,10 +43,11 @@
     <form method="get" class="mb-4 filter-form">
         <div class="row g-4">
            <!-- {{ filter_form.as_p }} -->
+            <div class="col-md-6">{{ filter_form.building }}</div>
             <div class="col-md-6">{{ filter_form.apartment }}</div>
             <div class="col-md-6">{{ filter_form.tenant }}</div>
             <div class="col-md-6">{{ filter_form.search }}</div>
-            <div class="col-md-6 text-start">
+            <div class="col-md-12 text-start">
                 <a href="{% url 'active_tenant_list' %}" class="btn btn-outline-secondary mx-2">إلغاء التصفية</a>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> تصفية</button>
             </div>

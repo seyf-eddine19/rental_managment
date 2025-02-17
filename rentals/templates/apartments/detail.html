@@ -5,6 +5,11 @@
     <!-- Header Section -->
     <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-4">
       <h1 class="text-end">تفاصيل {{ model_verbose_name }}</h1>
+
+      <a href="?export=1&format=pdf{% for key, value in request.GET.items %}{% if key != 'export' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+      class="btn btn-outline-danger shadow-sm">
+      <i class="fas fa-file-pdf"></i> تصدير PDF
+      </a>
     </div>
 
     <!-- Flash Messages -->

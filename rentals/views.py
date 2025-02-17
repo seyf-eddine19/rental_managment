@@ -34,6 +34,7 @@ from django.urls import reverse_lazy
 from django.forms import HiddenInput
 from django.views.generic import ListView, FormView, DetailView, DeleteView
 from django.db.models import Count, Q
+from django.db import IntegrityError
 
 from .models import Building, Apartment, Tenant, ActiveTenant, ServiceRoom
 from .forms import (
@@ -580,7 +581,7 @@ class ApartmentListView(PermissionRequiredMixin, ExportMixin, ListView):
 
                         building, created = Building.objects.get_or_create(
                             building_number=building_number,
-                            defaults={"number_of_floors": 1, "number_of_apartments": 0}
+                            defaults={"number_of_floors": 5, "number_of_apartments": 0}
                         )
 
                         Apartment.objects.create(
@@ -636,6 +637,17 @@ class ApartmentDetailView(PermissionRequiredMixin, DetailView):
         ]
         return context
     
+    def get(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        context = self.get_context_data()
+
+        # Handle export request
+        if "export" in self.request.GET:
+            export_format = self.request.GET.get("format", "excel")
+            if export_format == "pdf":
+                return self.export_to_pdf()
+        return self.render_to_response(context)
+    
     def post(self, request, *args, **kwargs):
         """ Handle the 'Set Vacant' action directly in this view. """
         apartment = self.get_object()
@@ -649,7 +661,100 @@ class ApartmentDetailView(PermissionRequiredMixin, DetailView):
                 messages.warning(request, "الشقة بالفعل شاغرة.")
 
         return redirect('apartment_detail', pk=apartment.pk)
+
+    def export_to_pdf(self):
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
     
+        # Register Arabic font
+        font_path = os.path.abspath(os.path.join(settings.STATIC_ROOT, "fonts", "Janna LT Bold", "Janna LT Bold.ttf"))
+        pdfmetrics.registerFont(TTFont("Janna", font_path))
+    
+        # Styles
+        title_style = ParagraphStyle(name="Title", fontName="Janna", fontSize=16, alignment=2, spaceAfter=20, textColor=colors.HexColor("#336699"))
+        subtitle_style = ParagraphStyle(name="Subtitle", fontName="Janna", fontSize=12, alignment=2, spaceAfter=20, textColor=colors.black)
+        text_style = ParagraphStyle(name="Text", fontName="Janna", fontSize=10, alignment=2, spaceAfter=5)  # Right-aligned for Arabic text
+        table_style = TableStyle([
+            ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+            ("FONTNAME", (0, 0), (-1, -1), "Janna"),
+            ("FONTSIZE", (0, 0), (-1, -1), 10),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+            ("LINEABOVE", (0, 0), (-1, 1), 0.5, colors.grey),  # Border above the first row
+            ("LINEBELOW", (0, -1), (-1, -1), 0.5, colors.grey),  # Border below the last row
+       ])
+
+        # Prepare content for PDF export, adjust as needed for your model
+        text_1 = (
+          get_display(arabic_reshaper.reshape("رقم العمارة: ") + "<font color='darkgray'>" + str(self.object.building.building_number) + "</font>")
+        )
+        text_2 = (
+          get_display(arabic_reshaper.reshape("رقم الشقة: ") + "<font color='darkgray'>" + str(self.object.apartment_number) + "</font>")
+        )
+        apartment_details = [
+            [
+             Paragraph(text_2, subtitle_style),
+             Paragraph(text_1, subtitle_style)
+            ], [
+             Paragraph(get_display(arabic_reshaper.reshape("عدد الغرف: ") + "<font color='darkgray'>" + str(self.object.num_of_rooms) + "</font>"), subtitle_style), 
+             Paragraph("<font color='darkgray'>" + get_display(arabic_reshaper.reshape(str(self.object.building.address))) + "</font>" + get_display(arabic_reshaper.reshape("عنوان العمارة: ")), subtitle_style), 
+            ], [
+             Paragraph(get_display(arabic_reshaper.reshape("رقم عداد الماء: ") + "<font color='darkgray'>" + str(self.object.water_meter_number) + "</font>"), subtitle_style),
+             Paragraph(get_display(arabic_reshaper.reshape("رقم عداد الكهرباء: ") + "<font color='darkgray'>" + str(self.object.electricity_meter_number) + "</font>"), subtitle_style),
+            ], [ 
+             Paragraph("<font color='darkgray'>" + get_display(arabic_reshaper.reshape(str(self.object.status))) + "</font>" + get_display(arabic_reshaper.reshape("حالة الشقة: ")), subtitle_style), 
+             Paragraph(get_display(arabic_reshaper.reshape("رقم الطابق: ") + "<font color='darkgray'>" + str(self.object.floor_number) + "</font>"), subtitle_style), 
+            ]
+        ]
+
+        # Tenant information (you can adjust the model references accordingly)
+        tenant_details = [
+            [
+             Paragraph(f"<font color='darkgray'>{self.object.active_tenant.tenant.phone_number}</font> <strong>{get_display(arabic_reshaper.reshape('رقم الهاتف: '))}</strong> ", subtitle_style),
+             Paragraph(f"<font color='darkgray'>{get_display(arabic_reshaper.reshape(self.object.active_tenant.tenant.name))}</font> <strong>{get_display(arabic_reshaper.reshape('اسم المستأجر: '))}</strong> ", subtitle_style),
+            ], [
+             Paragraph(f"<font color='darkgray'>{self.object.active_tenant.rent_amount}</font> <strong>{get_display(arabic_reshaper.reshape('مبلغ الإيجار: '))}</strong> ", subtitle_style),
+             Paragraph(f"<font color='darkgray'>{self.object.active_tenant.contract_number}</font> <strong>{get_display(arabic_reshaper.reshape('رقم العقد: '))}</strong>", subtitle_style),
+            ], [
+             Paragraph(f"<font color='darkgray'>{self.object.active_tenant.contract_end_date}</font> <strong>{get_display(arabic_reshaper.reshape('تاريخ انتهاء العقد:'))}</strong> ", subtitle_style),
+             Paragraph(f"<font color='darkgray'>{self.object.active_tenant.contract_start_date}</font> <strong>{get_display(arabic_reshaper.reshape('تاريخ بداية العقد: '))}</strong> ", subtitle_style),
+            ]
+        ]
+        
+        rental_history = self.object.rental_history.all()
+        rental_history = self.object.rental_history.values('contract_number', 'tenant__name', 'contract_start_date', 'contract_end_date', 'rent_amount', 'notes')
+        
+        # Prepare content for rental history
+        rental_history_content = []
+        for rental in rental_history:
+            rental_text = f"""
+            <font color='darkgrey'>{rental['rent_amount']}</font> {get_display(arabic_reshaper.reshape("بمبلغ: "))} <font color='darkgrey'>{rental['contract_end_date']}</font> {get_display(arabic_reshaper.reshape("إلى"))} <font color='darkgrey'>{rental['contract_start_date']}</font> {get_display(arabic_reshaper.reshape("من"))}  <font color='darkgrey'>{get_display(arabic_reshaper.reshape(rental['tenant__name']))}</font> {get_display(arabic_reshaper.reshape("تم تاجير الشقة ل "))} - <font color='darkgrey'> {rental['contract_number']} {get_display(arabic_reshaper.reshape("العقد: "))}</font>   
+            """
+            rental_history_content.append([Paragraph((rental_text), text_style)])
+
+        elements = [
+            Spacer(1, 10),
+            Paragraph(get_display(arabic_reshaper.reshape(f"تفاصيل الشقة:")), title_style),
+            Table(apartment_details),
+            Spacer(1, 30),
+            Paragraph(get_display(arabic_reshaper.reshape(f"معلومات المستاجر الحالي")), title_style),
+            Table(tenant_details),
+            Spacer(1, 30),
+            Paragraph(get_display(arabic_reshaper.reshape("سجل الإيجار")), ParagraphStyle(name="Subtitle", fontName="Janna", fontSize=12, alignment=2, spaceAfter=20, textColor=colors.HexColor("#336699"))),
+            Table(rental_history_content, style=table_style),
+            Spacer(1, 10),
+        ]
+
+        # Build the PDF document
+        doc.build(elements)
+
+        # Send the PDF response
+        pdf = buffer.getvalue()
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{self.object}_details.pdf"'
+        return response
+
 class ApartmentDeleteView(PermissionRequiredMixin, DeleteView):
     model = Apartment
     template_name = 'apartments/delete.html'
@@ -733,13 +838,16 @@ class ActiveTenantListView(PermissionRequiredMixin, ExportMixin, ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         apartment_filter = self.request.GET.get('apartment')
+        building_filter = self.request.GET.get('building')
         tenant_filter = self.request.GET.get('tenant')
         search_filter = self.request.GET.get('search')
 
         if apartment_filter:
-            queryset = queryset.filter(apartment=apartment_filter)
+            queryset = queryset.filter(apartment__apartment_number=apartment_filter)
+        if building_filter:
+            queryset = queryset.filter(apartment__building__building_number=building_filter)
         if tenant_filter:
-            queryset = queryset.filter(tenant=tenant_filter)
+            queryset = queryset.filter(tenant__name=tenant_filter)
         if search_filter:
             queryset = queryset.filter(
                 Q(tenant__phone_number__icontains=search_filter) |
@@ -752,7 +860,7 @@ class ActiveTenantListView(PermissionRequiredMixin, ExportMixin, ListView):
         context['filter_form'] = ActiveTenantFilterForm(self.request.GET)
         return context
 
-class ActiveTenantFormView(PermissionRequiredMixin, FormView):
+class ActiveTenantFormView1(PermissionRequiredMixin, FormView):
     """ View to create or update an ActiveTenant """
     model = ActiveTenant
     form_class = ActiveTenantForm
@@ -777,12 +885,117 @@ class ActiveTenantFormView(PermissionRequiredMixin, FormView):
         context = super().get_context_data(**kwargs)
         context['apartment_id'] = self.apartment.pk
         context['active_tenant_id'] = self.active_tenant.pk if self.active_tenant else None
+        context['tenant_form'] = TenantForm()  # Render the tenant form as well
         return context
     
     def form_valid(self, form):
         """ Save the tenant details """
+        # Check if a tenant was selected or not
+        tenant_form = TenantForm(self.request.POST)
+        
+        if tenant_form.is_valid():
+            tenant_name = tenant_form.cleaned_data['tenant_name']
+            phone_number = tenant_form.cleaned_data['phone_number']
+            id_number = tenant_form.cleaned_data['id_number']
+            workplace = tenant_form.cleaned_data['workplace']
+
+            # Handle tenant creation if not selected
+            tenant, created = Tenant.objects.get_or_create(
+                phone_number=phone_number,
+                id_number=id_number,
+                defaults={'name': tenant_name, 'workplace': workplace}
+            )
+            if created:
+                messages.success(self.request, f"تم إضافة المستأجر الجديد: {tenant_name}")
+            else:
+                messages.info(self.request, f"المستأجر {tenant_name} موجود بالفعل.")
+            
+            # Save the active tenant instance
+            form.instance.tenant = tenant
+        else:
+            messages.error(self.request, "هناك خطأ في بيانات المستأجر.")
+
+        # Set the apartment for this active tenant
         form.instance.apartment = self.apartment
         form.instance.save()
+
+        messages.success(self.request, "تم حفظ البيانات بنجاح.")
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        """ Redirect to apartment detail page """
+        return reverse_lazy('apartment_detail', kwargs={'pk': self.apartment.pk})
+
+class ActiveTenantFormView(PermissionRequiredMixin, FormView):
+    """ View to create or update an ActiveTenant """
+    model = ActiveTenant
+    form_class = ActiveTenantForm
+    template_name = 'active_tenants/form.html'
+    permission_required = 'rentals.change_apartment'
+    
+    def get_form_kwargs(self):
+        """ Pass instance for update; create new if none exists """
+        kwargs = super().get_form_kwargs()
+        self.apartment = get_object_or_404(Apartment, id=self.kwargs['apartment_id'])
+
+        # Retrieve the ActiveTenant instance if it exists
+        if 'pk' in self.kwargs:
+            self.active_tenant = get_object_or_404(ActiveTenant, id=self.kwargs['pk'])
+            # Populate the tenant data in the form for update
+            kwargs['initial'] = {
+                'tenant_name': self.active_tenant.tenant.name,
+                'phone_number': self.active_tenant.tenant.phone_number,
+                'id_number': self.active_tenant.tenant.id_number,
+                'workplace': self.active_tenant.tenant.workplace,
+                'tenant': self.active_tenant.tenant,  # Set the current tenant in the form
+            }
+        else:
+            self.active_tenant = None  # Creating a new tenant
+
+        kwargs['instance'] = self.active_tenant
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        """ Pass apartment and active tenant IDs to the template """
+        context = super().get_context_data(**kwargs)
+        context['apartment_id'] = self.apartment.pk
+        context['active_tenant_id'] = self.active_tenant.pk if self.active_tenant else None
+        return context
+    
+    def form_valid(self, form):
+        tenant_name = form.cleaned_data['tenant_name']
+        phone_number = form.cleaned_data['phone_number']
+        id_number = form.cleaned_data['id_number']
+        workplace = form.cleaned_data['workplace']
+
+        try:
+            # Handle tenant creation or selection
+            tenant, created = Tenant.objects.get_or_create(
+                phone_number=phone_number,
+                id_number=id_number,
+                defaults={
+                        'name': tenant_name,
+                        'workplace': workplace,
+                }
+            )
+            
+            if created:
+                messages.success(self.request, f"تم إضافة المستأجر الجديد: {tenant_name}")
+            else:
+                messages.info(self.request, f"المستأجر {tenant_name} موجود بالفعل.")
+    
+        except IntegrityError:
+            messages.error(self.request, "رقم الهاتف أو رقم الهوية غير فريد. الرجاء التحقق من البيانات.")
+            return self.form_invalid(form)
+        
+        # Save the active tenant instance
+        form.instance.tenant = tenant
+        form.instance.apartment = self.apartment
+        form.instance.save()
+
+        # Optionally, update apartment status (e.g., set as occupied)
+        self.apartment.status = 'مأهولة'
+        self.apartment.save()
 
         messages.success(self.request, "تم حفظ البيانات بنجاح.")
         return super().form_valid(form)

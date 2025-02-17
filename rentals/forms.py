@@ -116,9 +116,6 @@ class TenantForm(forms.ModelForm):
         model = Tenant
         fields = "__all__"
         can_delete=True
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-        }
 
 class ActiveTenantForm(forms.ModelForm):
     tenant = forms.ModelChoiceField(queryset=Tenant.objects.all(), label="المستأجر")
@@ -133,6 +130,25 @@ class ActiveTenantForm(forms.ModelForm):
             'contract_start_date': forms.DateInput(attrs={'type': 'date'}),
             'contract_end_date': forms.DateInput(attrs={'type': 'date'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+
+class ActiveTenantForm(forms.ModelForm):
+    tenant_name = forms.CharField(max_length=100, required=False, label="اسم المستأجر")
+    phone_number = forms.CharField(max_length=15, required=False, label="رقم الهاتف")
+    id_number = forms.CharField(max_length=20, required=False, label="رقم الهوية")
+    workplace = forms.CharField(max_length=100, required=False, label="جهة العمل")
+
+    class Meta:
+        model = ActiveTenant
+        fields = [
+            'tenant_name', 'phone_number', 'id_number', 'workplace',
+            'contract_number', 'contract_start_date', 'contract_end_date',
+            'rent_amount', 'notes'
+        ]
+        widgets = {
+            'contract_start_date': forms.DateInput(attrs={'type': 'date'}),
+            'contract_end_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
 
@@ -190,6 +206,11 @@ class TenantFilterForm(forms.Form):
     )
 
 class ActiveTenantFilterForm(forms.Form):
+    building = forms.ChoiceField(
+        required=False,
+        widget=Select2Widget(attrs={"class": "select2", 'data-placeholder': 'اختر العمارة'}),
+        label="العمارة"
+    )
     apartment = forms.ChoiceField(
         required=False,
         widget=Select2Widget(attrs={"class": "select2", 'data-placeholder': 'اختر الشقة'}),
@@ -207,7 +228,9 @@ class ActiveTenantFilterForm(forms.Form):
     )
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        apartments = Apartment.objects.all().distinct()
+        buildings = Building.objects.values_list('building_number', flat=True).distinct()
+        self.fields['building'].choices = [(b, b) for b in buildings]
+        apartments = Apartment.objects.values_list('apartment_number', flat=True).distinct()
         self.fields['apartment'].choices = [(b, b) for b in apartments]
         tenants = Tenant.objects.all().distinct()
         self.fields['tenant'].choices = [(b, b) for b in tenants]
